@@ -3,16 +3,16 @@ let dataset = []
 
 //Dit is de class die gebruikt wordt in de uiteindelijke dataset. Deze class wordt aangeroepen per land, zoals de naam al sugereert. Hierdoor krijg ik een array met compacte objects met alleen de nodige data.
 class Country {
-  constructor(price_hh_data, eoteq_data, cc_data, iteration) {
+  constructor(price_hh_data, eoteq_data, iteration) {
     this.country = price_hh_data[iteration].GEO
     this.kWh_price = parseFloat(price_hh_data[iteration].Value)
     this.line_data = []
     for (let i = 0; i < eoteq_data[iteration].values.length; i++) {   //Hier maak ik een genestte array voor line_data. Hierdoor kan ik een line chart maken met dezelfde dataset als de bar chart
-      let year = parseInt(eoteq_data[iteration].values[i].TIME)
+      let year = eoteq_data[iteration].values[i].TIME
       let co2_value = parseFloat(eoteq_data[iteration].values[i].Value.replace(/[,]/g, ''))
       this.line_data.push({year, co2_value})
     }
-    this.ISO_2 = cc_data[iteration].alpha_2
+    this.ISO_2 = price_hh_data[iteration].countrycode
   }
 }
 
@@ -99,11 +99,87 @@ function barChart(dataset) {
     .text('Countries in the EU')
   //titel
   main_svg.append('text')
-    .attr('class', 'bar-title')
+    .attr('class', 'graph-title')
     .attr('transform', 'translate(' + 1/5*w + ',' + 0 + ')')
     .text('Cost of kWh per country in the EU.')
 }
 
+function lineChart(dataset) {
+  const bar_padding = 40;
+  const h = 500;
+  const w = 1500;
+  var xMax = d3.max(dataset, function(d) {
+    return d3.max(d.line_data, function(f) {
+      return f.year
+    })
+  })
+  var xMin = d3.min(dataset, function(d) {
+    return d3.min(d.line_data, function(f) {
+      return f.year
+    })
+  })
+  var yMax = d3.max(dataset, function(d) {
+    return d3.max(d.line_data, function(f) {
+      return f.co2_value
+    })
+  })
+  console.log(xMax)
+  let xScale = d3.scaleTime()
+    .domain([xMin, xMax])
+    .range([0, w])
+  console.log(xScale(2016))
+  let yScale = d3.scaleLinear()
+    .domain([0, yMax])
+    .range([h, 0]);
+  let xAxis = d3.axisBottom(xScale)
+  let yAxis = d3.axisLeft(yScale)
+
+  let line = d3.line()
+      .defined(d => !isNaN(d))
+      .x(d => xScale(d.line_data.year) )
+      .y(d => yScale(d.line_data.co2_value) );
+        
+  let main_svg = d3.select('.line-chart')
+
+ 
+  main_svg.selectAll('g')
+    .data(dataset, d => d.line_data)
+    .enter()
+    .append('g')
+    .selectAll('path')
+      .data(d => d.line_data)
+      .enter()
+      .append('path')
+      .attr('d', d3.line()
+            .x(function(d) {
+                console.log(d)
+                console.log(xScale(d.year))
+              return xScale(d.year)})
+            .y(d => yScale(d.co2_value))
+      );
+  //Axes
+  main_svg.append('g')
+    .attr('transform', 'translate(' + bar_padding + ',' + (h+bar_padding) + ')')
+    .call(xAxis)
+
+  main_svg.append('g')
+    .attr('transform', 'translate(' + bar_padding + ',' + bar_padding + ')')
+    .call(yAxis);
+  main_svg.append('text')
+    .attr('class', 'x-label')
+    .attr('transform', 'translate(' + 3/4*w + ',' + (h+0.2*h) + ')')
+    .text('Year')
+  main_svg.append('text')
+    .attr('class', 'y-label')
+    .attr('transform', 'translate(' + -2.5*bar_padding + ',' + (h/3)*1.8 + ')')
+    .text('CO2(OTEQ)')
+  //titel
+  main_svg.append('text')
+    .attr('class', 'graph-title')
+    .attr('transform', 'translate(' + 1/5*w + ',' + 0 + ')')
+    .text('Trendline of CO2 Emissions in EU countries (2009, 2018)')
+
+}
 
 //Data aanroepen met een promise, en dan gebruiken.
 Promise.all([
@@ -133,7 +209,7 @@ Promise.all([
     for (let i = 0; i < files[2].length; i++) {
       for (let j = 0; j < price_hh_data.length; j++) {
         if(files[2][i].name == price_hh_data[j].GEO) {
-          cc_data.push(files[2][i])
+          price_hh_data[j].countrycode = files[2][i].alpha_2
         }
       }
     }
@@ -141,13 +217,12 @@ Promise.all([
     //console.log(cc_data)
     //Hier maak ik de uiteindelijke array waarbij de twee bovenstaande arrays worden gecombineerd. Ik gebruik hiervoor een class. Deze class staat helemaal bovenaan.
     for (let i = 0; i < price_hh_data.length; i++) {
-      dataset.push(new Country(price_hh_data, eoteq_data, cc_data, i))
+      dataset.push(new Country(price_hh_data_sorted, eoteq_data, i))
     }
-
-    //Sorteer de dataset
-    //console.log(dataset)
+    console.log(dataset)
     //Ik gebruik functies zodat het makkelijker is om 2 charts in 1 pagina te hebben, zonder dat ik last heb van functies die over elkaar heen schrijven (denk aan scales etc)
     barChart(dataset)
+    lineChart(dataset)
     //Voor als er iets mis gaat in de promise, dan wordt de gebruiker hiervan gewaarschuwd.
     
 })/*.catch(err =>  {

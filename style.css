@@ -23,6 +23,10 @@
   padding: 5% 0 0 5%;
   overflow: visible;
 }
+.line-chart {
+  overflow: visible;
+  padding: 0 0 0 5%;
+}
 
 
 #tooltip.hidden {
@@ -35,19 +39,39 @@
     font-size: 16px;
     line-height: 20px;
 }
+
 #name {
 	color: #e57b0b;
 }
+
 #value {
 	color: #4d9707;
 }
 
-.bar-title {
+.graph-title {
 	font-size: 2.5em;
 	font-family: 'Poiret One'!important ;
+}
+
+.line-chart text {
+    font-family: sans-serif;
+    font-weight: bold;
+}
+
+.line-chart g text {
+    font-size: 11px;
 }
 
 .bar-chart text {
 	font-family: sans-serif;
 	font-weight: bold;
+}
+
+.bar-chart g text {
+    font-size: 11px;
+}
+
+.grid-box {
+    display: grid;
+    height: 800px;
 }

@@ -11,8 +11,15 @@
 	<body>
 		<script src="script.js"></script>
 		<div class='container'>
-			<div class="bar-div">
+			<div class="bar-div grid-box">
 				<svg class="bar-chart" style="height:600px;width:1920px;"></svg>
+				<div id="tooltip" class="hidden" style="left:0px; top: 500px;">
+				    <p><strong><span id="name">Important Label Heading</span></strong></p>
+				    <p><span id="value">100</span> € / kWh</p>
+				</div>
+			</div>
+			<div class="line-div grid-box">
+				<svg class="line-chart" style="height: 600px; width: 1920px;"></svg>
 				<div id="tooltip" class="hidden" style="left:0px; top: 500px;">
 				    <p><strong><span id="name">Important Label Heading</span></strong></p>
 				    <p><span id="value">100</span> € / kWh</p>
