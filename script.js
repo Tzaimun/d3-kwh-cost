@@ -6,11 +6,13 @@ class Country {
   constructor(price_hh_data, eoteq_data, iteration) {
     this.country = price_hh_data[iteration].GEO
     this.kWh_price = parseFloat(price_hh_data[iteration].Value)
-    this.line_data = []
+    this.years = []
+    this.co2_values = []
     for (let i = 0; i < eoteq_data[iteration].values.length; i++) {   //Hier maak ik een genestte array voor line_data. Hierdoor kan ik een line chart maken met dezelfde dataset als de bar chart
-      let year = eoteq_data[iteration].values[i].TIME
+      let year = parseInt(eoteq_data[iteration].values[i].TIME)
       let co2_value = parseFloat(eoteq_data[iteration].values[i].Value.replace(/[,]/g, ''))
-      this.line_data.push({year, co2_value})
+      this.years.push(year)
+      this.co2_values.push(co2_value)
     }
     this.ISO_2 = price_hh_data[iteration].countrycode
   }
@@ -108,28 +110,20 @@ function lineChart(dataset) {
   const bar_padding = 40;
   const h = 500;
   const w = 1500;
-  var xMax = d3.max(dataset, function(d) {
-    return d3.max(d.line_data, function(f) {
-      return f.year
-    })
+  
+  let xMax = d3.max(dataset, function(d) {
+    return d3.max(d.years)
   })
-  var xMin = d3.min(dataset, function(d) {
-    return d3.min(d.line_data, function(f) {
-      return f.year
-    })
+  let xMin = d3.min(dataset, function(d) {
+    return d3.min(d.years)
   })
-  var yMax = d3.max(dataset, function(d) {
-    return d3.max(d.line_data, function(f) {
-      return f.co2_value
-    })
-  })
-  console.log(xMax)
   let xScale = d3.scaleTime()
-    .domain([xMin, xMax])
+    .domain([new Date("January 1, 2009 00:00:00"), new Date("January 4, 2018 00:00:00")])
     .range([0, w])
-  console.log(xScale(2016))
   let yScale = d3.scaleLinear()
-    .domain([0, yMax])
+    .domain([0, d3.max(dataset, d => {
+      return d3.max(d.co2_values)
+    })])
     .range([h, 0]);
   let xAxis = d3.axisBottom(xScale)
   let yAxis = d3.axisLeft(yScale)
@@ -142,21 +136,18 @@ function lineChart(dataset) {
   let main_svg = d3.select('.line-chart')
 
  
-  main_svg.selectAll('g')
+  main_svg.selectAll('path')
     .data(dataset, d => d.line_data)
     .enter()
-    .append('g')
-    .selectAll('path')
-      .data(d => d.line_data)
-      .enter()
-      .append('path')
-      .attr('d', d3.line()
-            .x(function(d) {
-                console.log(d)
-                console.log(xScale(d.year))
-              return xScale(d.year)})
-            .y(d => yScale(d.co2_value))
-      );
+    .append('path')
+    .attr('class', function(d) {
+      console.log(d.years);
+      return 'kankerhardetest'
+    })
+    .attr('d', d3.line()
+        .x(d => xScale(d.years))
+        .y(d => yScale(d.co2_values))
+    );
   //Axes
   main_svg.append('g')
     .attr('transform', 'translate(' + bar_padding + ',' + (h+bar_padding) + ')')
@@ -187,7 +178,7 @@ Promise.all([
     d3.csv('/nrg_bal_c/energy_prices_household.csv'),
     d3.csv('/nrg_bal_c/slim-2_country_codes.csv')
   ]).then(files => {
-    console.log(files)
+    //console.log(files)
     //Hiermee maak ik een nieuwe array, waarbij er gesorteerd is op het land. Hierdoor krijg je een genestte array met alle waarden met hetzelfde land bij elkaar, deze data is van de energy_oil_tonnes_eq.csv
     let eoteq_data = d3.nest()
         .key(d => d.GEO)
@@ -202,9 +193,9 @@ Promise.all([
         price_hh_data.push(files[1][i])
       }
     };
-    console.log(price_hh_data)
+    //console.log(price_hh_data)
     let price_hh_data_sorted = price_hh_data.sort((a, b) => a.GEO - b.GEO)
-    console.log(price_hh_data_sorted)
+    //console.log(price_hh_data_sorted)
     let cc_data = []
     for (let i = 0; i < files[2].length; i++) {
       for (let j = 0; j < price_hh_data.length; j++) {
@@ -219,7 +210,7 @@ Promise.all([
     for (let i = 0; i < price_hh_data.length; i++) {
       dataset.push(new Country(price_hh_data_sorted, eoteq_data, i))
     }
-    console.log(dataset)
+    //console.log(dataset)
     //Ik gebruik functies zodat het makkelijker is om 2 charts in 1 pagina te hebben, zonder dat ik last heb van functies die over elkaar heen schrijven (denk aan scales etc)
     barChart(dataset)
     lineChart(dataset)
